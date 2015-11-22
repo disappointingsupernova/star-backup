@@ -5,12 +5,12 @@ set -o pipefail
 
 DRIVE_FOLDER_MIME="application/vnd.google-apps.folder"
 DRIVE_BACKUP_FOLDER="backups"
-BACKUP_FOLDER="/media/data/backups"
+LOCAL_BACKUP_FOLDER="/media/data/backups"
 PUBKEY="/usr/local/etc/key.pub"
 EXCLUDE="/usr/local/etc/backup.exclude"
 
-TARGET="$BACKUP_FOLDER/pi-$(date +"%d-%m-%Y").tar.gz"
-OLD_BACKUPS=$(find $BACKUP_FOLDER -mtime +9)
+TARGET="$LOCAL_BACKUP_FOLDER/backup-$(date +"%d-%m-%Y").tar.gz"
+OLD_BACKUPS=$(find $LOCAL_BACKUP_FOLDER -mtime +9)
 
 function create_secure_backup {
     umask 077
@@ -25,10 +25,10 @@ function create_secure_backup {
     echo "Creating encrypted archive... $(date +%H:%M:%S)"
 
     # Backup, gzip and encrypt the filesystem
-    tar -cpf - --directory=/ -X $EXCLUDE . | pigz -p 3 | openssl enc -aes-256-cbc -a -salt -out "$target" -pass file:"$password"
+    tar -cpf - --directory=/ -X "$EXCLUDE" . | pigz -p 3 | openssl enc -aes-256-cbc -a -salt -out "$target" -pass file:"$password"
 
     # Encrypt archive password with public key
-    openssl rsautl -encrypt -pubin -inkey $PUBKEY -in "$password" -out "$target.key"
+    openssl rsautl -encrypt -pubin -inkey "$PUBKEY" -in "$password" -out "$target.key"
 
     # Delete archive password 
     rm "$password"
